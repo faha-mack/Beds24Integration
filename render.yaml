@@ -11,8 +11,6 @@ services:
         value: "mongodb://host.docker.internal:27017"
     buildCommand: docker-compose build
     startCommand: docker-compose up
-    ports:
-      - port: 8000
 
   # Uncomment and configure the following section if you want to include Nginx
   # - type: web

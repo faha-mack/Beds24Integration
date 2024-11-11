@@ -13,9 +13,9 @@ import authenticator
 from dotenv import load_dotenv
 
 # MongoDB setup
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://host.docker.internal:27017")
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://fah-db-stg:ABkaR4Tobo9Njo1N@cluster0.5obcm3m.mongodb.net/fah-stg?retryWrites=true&w=majority")
 client = AsyncIOMotorClient(MONGODB_URL)
-db = client["session_db"]
+db = client["test"]
 sessions_collection = db["sessions"]
 
 # In-memory storage of active Playwright instances
