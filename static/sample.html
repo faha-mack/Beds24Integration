@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Airbnb to Beds24</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #ff5a5f; /* Airbnb red color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #ff3d3f;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Connect Your Airbnb Account to Beds24</h1>
+        <p>Click the button below to begin the process of linking your Airbnb account with Beds24.</p>
+        <button class="btn" id="connect-btn">Connect Airbnb</button>
+    </div>
+
+    <script>
+        document.getElementById("connect-btn").addEventListener("click", function() {
+            // Redirect the user to the FastAPI route which will start the OAuth flow
+            window.location.href = "http://localhost/airbnb/connect/get_connection_uri";
+        });
+
+        // Function to handle URL changes
+        function handleUrlChange() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+
+            alert('URL changed: ' + urlParams.toString());
+            
+            if (code) {
+                alert('Code received: ' + code);
+                // Send the code to the server for processing (i.e., link to Beds24)
+                fetch('/process_code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: code })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Account linked successfully!');
+                    // Optionally, you can display a success message or update the UI here
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        // Listen for URL changes using the popstate event
+        window.addEventListener('popstate', handleUrlChange);
+
+        // Call handleUrlChange on page load to handle the initial URL
+        handleUrlChange();
+    </script>
+
+</body>
+</html>
