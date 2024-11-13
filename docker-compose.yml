@@ -13,17 +13,6 @@ services:
     ports:
       - "8000:8000"
 
-  # nginx:
-  #   build:
-  #     context: ./nginx
-  #   container_name: nginx_server
-  #   ports:
-  #     - "80:80"  # Expose Nginx on port 80
-  #   depends_on:
-  #     - app
-  #   networks:
-  #     - app-network
-
 networks:
   app-network:
     driver: bridge
