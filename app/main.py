@@ -247,7 +247,11 @@ async def authenticate(session_id: str):
         await authenticator.move_mouse_naturally(page, page, ".b24btn_Login")
         await page.click(".b24btn_Login")
         
-        await page.wait_for_timeout(10000)
+        await page.wait_for_timeout(5000)
+
+        check_if_captcha_still_present = await page.query_selector("iframe[src*='recaptcha']")
+        if check_if_captcha_still_present:
+            return {"status": "error", "message": "reCAPTCHA not solved. Might try again later"}
 
         # Check if login was successful
         current_url = page.url
@@ -255,8 +259,8 @@ async def authenticate(session_id: str):
             cookies = await authenticator.get_cookies_from_page(page)
             return {"status": "success", "cookies": cookies}
         else:
-            username = os.getenv("GMAIL_APP_EMAIL")
-            app_password = os.getenv("GMAIL_APP_PASSWORD")
+            username = "channel.manager@findahost.io"
+            app_password = "efbdsqfyxefvtptb"
             code = await authenticator.check_gmail(username, app_password)
             if code.get('sender') == 'support@beds24.com':
                 login_code = code.get('code')
@@ -357,6 +361,16 @@ async def import_new_property_from_airbnb(token: str, airbnb_user_id: str, airbn
 @app.get("/sync_properties_from_airbnb", tags=["Airbnb"])
 async def sync_properties_from_airbnb(token: str, airbnb_user_id: str, airbnb_listing_id: str, beds24_propertyId: str):
     pass
+
+
+@app.get("/test_env_vars", tags=["Utilities"])
+async def test_env_vars():
+    return {
+        "BEDS24_USERNAME": os.environ.get("BEDS24_USERNAME"),
+        "BEDS24_PASSWORD": os.environ.get("BEDS24_PASSWORD"),
+        "GMAIL_APP_EMAIL": os.environ.get("GMAIL_APP_EMAIL"),
+        "GMAIL_APP_PASSWORD": os.environ.get("GMAIL_APP_PASSWORD")
+    }
 
 if __name__ == "__main__":
     import uvicorn
