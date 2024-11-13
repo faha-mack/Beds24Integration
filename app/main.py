@@ -142,10 +142,6 @@ async def get_session_instance(session_id: str):
 
 @app.post("/generate-session", tags=["Utilities"])
 async def generate_session(background_tasks: BackgroundTasks):
-    os.environ.pop("BEDS24_USERNAME", None)
-    os.environ.pop("BEDS24_PASSWORD", None)
-    os.environ.pop("GMAIL_APP_EMAIL", None)
-    os.environ.pop("GMAIL_APP_PASSWORD", None)
     load_dotenv()
     session_id = str(uuid.uuid4())
     background_tasks.add_task(start_playwright, session_id)
@@ -188,8 +184,8 @@ async def current_page(session_id: str):
 @app.get("/authenticate", tags=["Utilities"])
 async def authenticate(session_id: str):
     print("Step 1: Initiating authentication...")
-    username = "channel.manager"
-    password = "P0s>b.m2s4]e"
+    username = os.environ.get("BEDS24_USERNAME")
+    password = os.environ.get("BEDS24_PASSWORD")
     print("Step 2: Switching to non-headless mode...")
     await switch_to_non_headless(session_id)
     print("Step 3: Getting browser instance...")
@@ -259,8 +255,8 @@ async def authenticate(session_id: str):
             cookies = await authenticator.get_cookies_from_page(page)
             return {"status": "success", "cookies": cookies}
         else:
-            username = "channel.manager@findahost.io"
-            app_password = "efbdsqfyxefvtptb"
+            username = os.environ.get("GMAIL_APP_EMAIL")
+            app_password = os.environ.get("GMAIL_APP_PASSWORD")
             code = await authenticator.check_gmail(username, app_password)
             if code.get('sender') == 'support@beds24.com':
                 login_code = code.get('code')
@@ -297,7 +293,6 @@ async def authenticate(session_id: str):
     except PlaywrightTimeoutError:
         print("reCAPTCHA not found or took too long to load")
         return {"status": "reCAPTCHA not found or timeout"}
-
 
 @app.get("/switch-user", tags=["Utilities"])
 async def switch_user(session_id: str, user_email: str):
@@ -361,16 +356,6 @@ async def import_new_property_from_airbnb(token: str, airbnb_user_id: str, airbn
 @app.get("/sync_properties_from_airbnb", tags=["Airbnb"])
 async def sync_properties_from_airbnb(token: str, airbnb_user_id: str, airbnb_listing_id: str, beds24_propertyId: str):
     pass
-
-
-@app.get("/test_env_vars", tags=["Utilities"])
-async def test_env_vars():
-    return {
-        "BEDS24_USERNAME": os.environ.get("BEDS24_USERNAME"),
-        "BEDS24_PASSWORD": os.environ.get("BEDS24_PASSWORD"),
-        "GMAIL_APP_EMAIL": os.environ.get("GMAIL_APP_EMAIL"),
-        "GMAIL_APP_PASSWORD": os.environ.get("GMAIL_APP_PASSWORD")
-    }
 
 if __name__ == "__main__":
     import uvicorn
