@@ -188,8 +188,8 @@ async def current_page(session_id: str):
 @app.get("/authenticate", tags=["Utilities"])
 async def authenticate(session_id: str):
     print("Step 1: Initiating authentication...")
-    username = os.getenv("BEDS24_USERNAME")
-    password = os.getenv("BEDS24_PASSWORD")
+    username = "channel.manager"
+    password = "P0s>b.m2s4]e"
     print("Step 2: Switching to non-headless mode...")
     await switch_to_non_headless(session_id)
     print("Step 3: Getting browser instance...")
