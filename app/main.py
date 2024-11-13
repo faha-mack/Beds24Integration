@@ -237,7 +237,7 @@ async def authenticate(session_id: str):
         # Click with natural movement
         print("Clicking reCAPTCHA checkbox")
         await recaptcha_frame.click("div.recaptcha-checkbox-border")
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(10000)
         
         # Move to and click login button
         await authenticator.move_mouse_naturally(page, page, ".b24btn_Login")
@@ -292,6 +292,7 @@ async def authenticate(session_id: str):
             
     except PlaywrightTimeoutError:
         print("reCAPTCHA not found or took too long to load")
+        traceback.print_exc()
         return {"status": "reCAPTCHA not found or timeout"}
 
 @app.get("/switch-user", tags=["Utilities"])
