@@ -206,6 +206,15 @@ async def authenticate(session_id: str):
         await page.wait_for_selector("iframe[src*='recaptcha']", timeout=10000)
         print("Recaptcha selector found")
 
+        try:
+            await page.wait_for_selector("input.form-control.input-sm[name='username']")
+        except PlaywrightTimeoutError:
+            print("Username field not found")
+            page_content = await page.content()
+            print("Page content at the time of error:")
+            print(page_content)
+            return page_content 
+
         # Move mouse naturally to username field
         await authenticator.move_mouse_naturally(page, page, "input[name='username']")
         await page.fill("input.form-control.input-sm[name='username']", username)
