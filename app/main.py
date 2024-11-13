@@ -187,26 +187,35 @@ async def current_page(session_id: str):
 
 @app.get("/authenticate", tags=["Utilities"])
 async def authenticate(session_id: str):
+    print("Step 1: Initiating authentication...")
     username = os.getenv("BEDS24_USERNAME")
     password = os.getenv("BEDS24_PASSWORD")
+    print("Step 2: Switching to non-headless mode...")
     await switch_to_non_headless(session_id)
+    print("Step 3: Getting browser instance...")
     browser = await get_browser(session_id)
     context = browser.contexts[0]
     page = context.pages[0]
+    print("Step 4: Navigating to Beds24 login page...")
     await page.goto("https://beds24.com/control2.php")
     await page.wait_for_timeout(3000)
+    print("Current page url is now:", page.url)
+    print("Step 5: Authenticating user...")
     try:
         # Wait for the reCAPTCHA iframe to load
         await page.wait_for_selector("iframe[src*='recaptcha']", timeout=10000)
+        print("Recaptcha selector found")
 
         # Move mouse naturally to username field
         await authenticator.move_mouse_naturally(page, page, "input[name='username']")
         await page.fill("input.form-control.input-sm[name='username']", username)
+        print("Filled username field")
         await authenticator.human_like_delay()
         
         # Move mouse naturally to password field
         await authenticator.move_mouse_naturally(page, page, "input[name='loginpass']")
         await page.fill("input.form-control.input-sm[name='loginpass']", password)
+        print("Filled password field")
         await authenticator.human_like_delay()
         
         # Find and switch to recaptcha frame
@@ -221,6 +230,7 @@ async def authenticate(session_id: str):
         await authenticator.human_like_delay()
         
         # Click with natural movement
+        print("Clicking reCAPTCHA checkbox")
         await recaptcha_frame.click("div.recaptcha-checkbox-border")
         await page.wait_for_timeout(3000)
         
