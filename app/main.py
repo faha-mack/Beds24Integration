@@ -182,45 +182,40 @@ async def current_page(session_id: str):
     return {"session_id": session_id, "current_url": url}
 
 @app.get("/authenticate", tags=["Utilities"])
-async def authenticate(session_id: str):
-    print("Step 1: Initiating authentication...")
+async def authenticate(session_id: str, phpsessid: str = None):
+    if phpsessid:
+        browser = await get_browser(session_id)
+        context = browser.contexts[0]
+        page = context.pages[0]
+        await page.set_extra_http_headers({"Cookie": f"PHPSESSID={phpsessid}"})
+        await page.goto("https://beds24.com/control2.php")
+        cookies = await authenticator.get_cookies_from_page(page)
+        return {"status": "success", "cookies": cookies}
     username = os.environ.get("BEDS24_USERNAME")
     password = os.environ.get("BEDS24_PASSWORD")
-    print("Step 2: Switching to non-headless mode...")
     await switch_to_non_headless(session_id)
-    print("Step 3: Getting browser instance...")
     browser = await get_browser(session_id)
     context = browser.contexts[0]
     page = context.pages[0]
-    print("Step 4: Navigating to Beds24 login page...")
     await page.goto("https://beds24.com/control2.php")
     await page.wait_for_timeout(3000)
-    print("Current page url is now:", page.url)
-    print("Step 5: Authenticating user...")
     try:
         # Wait for the reCAPTCHA iframe to load
         await page.wait_for_selector("iframe[src*='recaptcha']", timeout=10000)
-        print("Recaptcha selector found")
-
         try:
             await page.wait_for_selector("input.form-control.input-sm[name='username']")
         except PlaywrightTimeoutError:
-            print("Username field not found")
             page_content = await page.content()
-            print("Page content at the time of error:")
-            print(page_content)
             return page_content 
 
         # Move mouse naturally to username field
         await authenticator.move_mouse_naturally(page, page, "input[name='username']")
         await page.fill("input.form-control.input-sm[name='username']", username)
-        print("Filled username field")
         await authenticator.human_like_delay()
         
         # Move mouse naturally to password field
         await authenticator.move_mouse_naturally(page, page, "input[name='loginpass']")
         await page.fill("input.form-control.input-sm[name='loginpass']", password)
-        print("Filled password field")
         await authenticator.human_like_delay()
         
         # Find and switch to recaptcha frame
@@ -235,19 +230,18 @@ async def authenticate(session_id: str):
         await authenticator.human_like_delay()
         
         # Click with natural movement
-        print("Clicking reCAPTCHA checkbox")
         await recaptcha_frame.click("div.recaptcha-checkbox-border")
-        await page.wait_for_timeout(10000)
+        await page.wait_for_timeout(5000)
+
+        recaptcha_checkbox = await page.query_selector("#rc-imageselect")
+        if recaptcha_checkbox:
+            return {"status": "error", "message": "reCAPTCHA not solved. Might try again later"}
         
         # Move to and click login button
         await authenticator.move_mouse_naturally(page, page, ".b24btn_Login")
         await page.click(".b24btn_Login")
         
         await page.wait_for_timeout(5000)
-
-        check_if_captcha_still_present = await page.query_selector("iframe[src*='recaptcha']")
-        if check_if_captcha_still_present:
-            return {"status": "error", "message": "reCAPTCHA not solved. Might try again later"}
 
         # Check if login was successful
         current_url = page.url
