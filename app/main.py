@@ -13,7 +13,7 @@ import authenticator
 from dotenv import load_dotenv
 
 # MongoDB setup
-MONGODB_URL = "mongodb+srv://fah-db-stg:ABkaR4Tobo9Njo1N@cluster0.5obcm3m.mongodb.net/fah-stg?retryWrites=true&w=majority"
+MONGODB_URL = os.environ.get("MONGODB_URL")
 client = AsyncIOMotorClient(MONGODB_URL)
 db = client["test"]
 sessions_collection = db["sessions"]
