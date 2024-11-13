@@ -37,13 +37,6 @@ async def lifespan(app: FastAPI):
         await close_playwright(session["_id"])
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Adjust this to your frontend's origin
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 async def start_playwright(session_id: str):
