@@ -11,6 +11,8 @@ import uuid
 import os
 import authenticator
 from dotenv import load_dotenv
+from models import ListingDetails
+from bs4 import BeautifulSoup
 
 # MongoDB setup
 MONGODB_URL = os.environ.get("MONGODB_URL")
@@ -184,8 +186,8 @@ async def authenticate(session_id: str, phpsessid: str = None):
         await page.goto("https://beds24.com/control2.php")
         cookies = await authenticator.get_cookies_from_page(page)
         return {"status": "success", "cookies": cookies}
-    username = os.environ.get("BEDS24_USERNAME")
-    password = os.environ.get("BEDS24_PASSWORD")
+    username = os.environ.get("BEDS24_USERNAME") if os.environ.get("BEDS24_USERNAME") else "channel.manager"
+    password = os.environ.get("BEDS24_PASSWORD") if os.environ.get("BEDS24_PASSWORD") else "P0s>b.m2s4]e"
     await switch_to_non_headless(session_id)
     browser = await get_browser(session_id)
     context = browser.contexts[0]
@@ -242,8 +244,8 @@ async def authenticate(session_id: str, phpsessid: str = None):
             cookies = await authenticator.get_cookies_from_page(page)
             return {"status": "success", "cookies": cookies}
         else:
-            username = os.environ.get("GMAIL_APP_EMAIL")
-            app_password = os.environ.get("GMAIL_APP_PASSWORD")
+            username = os.environ.get("GMAIL_APP_EMAIL") if os.environ.get("GMAIL_APP_EMAIL") else "channel.manager@findahost.io"
+            app_password = os.environ.get("GMAIL_APP_PASSWORD") if os.environ.get("GMAIL_APP_PASSWORD") else "efbdsqfyxefvtptb"
             code = await authenticator.check_gmail(username, app_password)
             if code.get('sender') == 'support@beds24.com':
                 login_code = code.get('code')
@@ -332,18 +334,217 @@ async def airbnb_callback(request: Request, sessionId: str):
     await page.goto(f"https://beds24.com/control3.php?pagetype=syncroniserairbnbaccount&code={code}")
     await page.wait_for_timeout(3000)
     return {"status": "success"}
+@app.get("/generate_invite_code", tags=["Utilities"])
+async def generate_beds24_invite_code(session_id: str):
+    browser, context, page = await get_session_instance(session_id)
+    await page.goto("https://beds24.com/control3.php?pagetype=apiv2")
+    await page.wait_for_selector("#settingformid > div > div > div > div.card-body > button")
+    await page.click("#settingformid > div > div > div > div.card-body > button")
+    await page.wait_for_selector("#massSelectorReadAll")
+    await page.click("#massSelectorReadAll")
+    await page.wait_for_timeout(1000)
+    await page.click("#massSelectorWriteAll")
+    await page.wait_for_timeout(1000)
+    await page.click("#massSelectorDeleteAll")
+    await page.wait_for_timeout(1000)
+    await page.click("#scopeModalSubmit")
+    await page.wait_for_timeout(2000)
+    text_element = await page.query_selector("#invitetokenlisttable > tbody > tr.odd > td.sorting_1 > span")
+    invite_code = await text_element.inner_text()
+    return {"invite_code": invite_code}
+
+@app.get("/get_auth_refresh_token", tags=["Utilities"])
+async def generate_refresh_token(invite_code: str):
+    url = "https://beds24.com/api/v2/authentication/setup"
+    headers = {
+        "accept": "application/json",
+        "code": invite_code,
+        "deviceName": "faha"
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+@app.get("/generate_auth_token_from_refresh", tags=["Utilities"])
+async def get_auth_token_from_refresh(refresh_token: str):
+    url = "https://beds24.com/api/v2/authentication/token"
+    headers = {
+        "accept": "application/json",
+        "refreshToken": refresh_token
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+@app.get("/automate_auth", tags=["Utilities"])
+async def automate_auth(session_id: str):
+
+    inv_code_response = await generate_beds24_invite_code(session_id)
+    invite_code = inv_code_response.get("invite_code")
+    auth_response = await generate_refresh_token(invite_code)
+    def convert_seconds(seconds):
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+        return hours, minutes, seconds
+    expires_in_seconds = auth_response.get("expiresIn")
+    hours, minutes, seconds = convert_seconds(expires_in_seconds)
+    
+    return {
+        "token": auth_response.get("token"),
+        "expiresIn": f"{hours} hours, {minutes} minutes, {seconds} seconds",
+    }
 
 @app.get("/get_airbnb_userIds_on_an_account", tags=["Airbnb"])
 async def get_airbnb_userIds_on_an_account(token: str):
-    pass
+    url = "https://beds24.com/api/v2/channels/airbnb/users"
+    headers = {
+        "accept": "application/json",
+        "token": token
+    }
 
-@app.get("/import_new_property_from_airbnb", tags=["Airbnb"])
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+@app.post("/import_new_property_from_airbnb", tags=["Airbnb"])
 async def import_new_property_from_airbnb(token: str, airbnb_user_id: str, airbnb_listing_id: str):
+    url = "https://beds24.com/api/v2/channels/airbnb"
+    headers = {
+        "accept": "application/json",
+        "token": token,
+        "Content-Type": "application/json"
+    }
+    data = [
+        {
+            "action": "importAsNewProperty",
+            "airbnbUserId": airbnb_user_id,
+            "airbnbListingId": airbnb_listing_id,
+            "connect": "full"
+        }
+    ]
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+@app.post("/sync_properties_from_airbnb", tags=["Airbnb"])
+async def sync_properties_from_airbnb(token: str, airbnb_user_id: str, airbnb_listing_id: str, beds24_propertyId: str):
+    url = "https://beds24.com/api/v2/channels/airbnb"
+    headers = {
+        "accept": "application/json",
+        "token": token,
+        "Content-Type": "application/json"
+    }
+    data = [
+        {
+            "action": "importToExistingProperty",
+            "airbnbUserId": airbnb_user_id,
+            "airbnbListingId": airbnb_listing_id,
+            "connect": "full",
+            "propertyId": beds24_propertyId
+        }
+    ]
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+@app.get("/get_airbnb_property_content", tags=["Airbnb"])
+async def get_airbnb_property_content(session_id: str, beds24roomId: str = "485733"):
+    browser, context, page = await get_session_instance(session_id)
+    await page.goto(f"https://beds24.com/control3.php?pagetype=syncroniserairbnbview&id={beds24roomId}")
+    await page.wait_for_selector("body > div.container-fluid.b24container-fluid > div > main > form > select")
+    await page.select_option("body > div.container-fluid.b24container-fluid > div > main > form > select", beds24roomId)
+    await page.wait_for_timeout(3000)
+    
+    elements_selectors = {
+        "listingdetails": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(13)",
+        "listingdescriptions": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(17)",
+        "priceandavailability": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(25)",
+        "listingrooms": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(29)",
+        "listingpictures": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(33)",
+    }
+    
+    data = {}
+
+    for key, selector in elements_selectors.items():
+        element_handle = await page.query_selector(selector)
+        if element_handle:
+            html_content = await element_handle.inner_html()
+            # Parse the HTML table to a dictionary
+            table_data = parse_table(html_content)
+            data[key] = table_data
+    return data
+
+@app.patch("modify_property_content", tags=["Airbnb"])
+async def modify_property_content(session_id: str, property_id: str, roomId: str, data: ListingDetails):
     pass
 
-@app.get("/sync_properties_from_airbnb", tags=["Airbnb"])
-async def sync_properties_from_airbnb(token: str, airbnb_user_id: str, airbnb_listing_id: str, beds24_propertyId: str):
-    pass
+@app.post("/import_new_property_from_bookingcom", tags=["Booking.com"])
+async def import_new_property_from_bookingcom(session_id: str, bookingcom_property_id: str):
+    browser, context, page = await get_session_instance(session_id)
+    await page.goto(f"https://beds24.com/control3.php?pagetype=syncroniserbookingcomxmlimport")
+    await page.wait_for_selector("#settingformid > div > div > div > div.card-body > div > div:nth-child(2) > div > input.form-control")
+    await page.fill("#settingformid > div > div > div > div.card-body > div > div:nth-child(2) > div > input.form-control", bookingcom_property_id)
+    return {"status": "success"}
+
+def parse_table(table_html: str) -> dict:
+    soup = BeautifulSoup(table_html, "html.parser")
+    data = {}
+    rows = soup.find_all("tr")[1:]  # Skip header row
+    for row in rows:
+        cols = row.find_all("td")
+        if len(cols) >= 3:
+            key = cols[0].text.strip()
+            value = cols[2].text.strip()
+            data[key] = value
+    return data
+
+@app.get("/get_bookingcom_property_content", tags=["Booking.com"])
+async def get_bookingcom_property_content(session_id: str, beds24roomId: str = "485733"):
+    browser, context, page = await get_session_instance(session_id)
+    await page.goto(f"https://beds24.com/control3.php?pagetype=syncroniserbookingcomxmlview")
+    await page.wait_for_selector("body > div.container-fluid.b24container-fluid > div > main > form > select")
+    await page.select_option("body > div.container-fluid.b24container-fluid > div > main > form > select", beds24roomId)
+    await page.wait_for_timeout(3000)
+    
+    elements_selectors = {
+        "address": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(15)",
+        "property_details": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(19)",
+        "rules": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(23)",
+        "profile": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(27)",
+        "pictures": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(31)",
+        "bookingcom_content": "body > div.container-fluid.b24container-fluid > div > main > table:nth-child(36)",
+    }
+    
+    data = {}
+
+    for key, selector in elements_selectors.items():
+        element_handle = await page.query_selector(selector)
+        if element_handle:
+            html_content = await element_handle.inner_html()
+            # Parse the HTML table to a dictionary
+            table_data = parse_table(html_content)
+            data[key] = table_data
+    return data
 
 if __name__ == "__main__":
     import uvicorn
