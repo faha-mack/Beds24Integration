@@ -771,7 +771,6 @@ async def connect_bookingcom_to_existing_room(session_id: str, beds24_property_i
     else:
         return {"status": "error", "message": "Booking.com connection failed: Given id does not exist or already been connected"}
     
-
 def parse_table(table_html: str) -> dict:
     soup = BeautifulSoup(table_html, "html.parser")
     data = {}

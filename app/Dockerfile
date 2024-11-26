@@ -1,8 +1,6 @@
 # Start with the FastAPI Uvicorn image
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.11
 
-# Set environment variables for Playwright and Xvfb
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV DISPLAY=:99
 
 # Copy the FastAPI application code
