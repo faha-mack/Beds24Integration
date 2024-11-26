@@ -1,6 +1,10 @@
 # Start with the FastAPI Uvicorn image
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.11
 
+# Set environment variables for Playwright and Xvfb
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV DISPLAY=:99
+
 # Copy the FastAPI application code
 COPY ./ /app
 
@@ -15,6 +19,8 @@ RUN apt-get update -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Expose the application port
 EXPOSE 8000
 
-CMD Xvfb :99 -screen 0 1024x768x16 & python3 main.py
+# Start the application with Xvfb
+CMD Xvfb :99 -screen 0 1024x768x16 & uvicorn main:app --host 0.0.0.0 --port 8000
