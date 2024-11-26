@@ -7,7 +7,6 @@ services:
       - app-network
     environment:
       - DISPLAY=:99
-      - MONGODB_URL=mongodb://host.docker.internal:27017
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
     ports:
