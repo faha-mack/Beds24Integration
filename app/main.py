@@ -59,7 +59,7 @@ async def save_state_to_mongodb():
                     "local_storage": await context.storage_state()
                 }
                 for session_id, (playwright, browser, context, page) in active_playwrights.items()
-                if not browser.is_closed() and not context.is_closed() and not page.is_closed()
+                if browser.is_connected() and context.is_connected() and page.is_connected()
             },
             "last_access_times": last_access_times
         }
