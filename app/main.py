@@ -302,11 +302,13 @@ async def authenticate(session_id: str, phpsessid: str = None):
                     break
                 await authenticator.human_like_delay()
                 await audio_button.click()
+                print("Audio button clicked")
                 await authenticator.human_like_delay()
                 audio_url_element = await recaptcha_frame.query_selector("#audio-source")
                 try:
                     audio_url = await audio_url_element.get_attribute("src")
                 except Exception as e:
+                    print("Audio not found... Trying again")
                     return {"status": "error", "message": "Automation Detected/Audio not found... Trying again"}
                 await authenticator.human_like_delay()
                 captcha_bypass = captcha_audio_bypass.BypassAudioCaptcha(audio_url)
@@ -318,6 +320,7 @@ async def authenticate(session_id: str, phpsessid: str = None):
                 await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-verify-button")
                 verify_button = await recaptcha_frame.query_selector("#recaptcha-verify-button")
                 await verify_button.click()
+                print("Verify button clicked")
                 await page.wait_for_load_state("networkidle")
                 break
         print("reCAPTCHA checkbox checked")
