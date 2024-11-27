@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
-from playwright.async_api import async_playwright, Browser, TimeoutError as PlaywrightTimeoutError, AttributeError
+from playwright.async_api import async_playwright, Browser, TimeoutError as PlaywrightTimeoutError
 from motor.motor_asyncio import AsyncIOMotorClient
 from contextlib import asynccontextmanager
 import uuid
@@ -306,7 +306,7 @@ async def authenticate(session_id: str, phpsessid: str = None):
                 audio_url_element = await recaptcha_frame.query_selector("#audio-source")
                 try:
                     audio_url = await audio_url_element.get_attribute("src")
-                except AttributeError as e:
+                except Exception as e:
                     return {"status": "error", "message": "Automation Detected/Audio not found... Trying again"}
                 await authenticator.human_like_delay()
                 captcha_bypass = captcha_audio_bypass.BypassAudioCaptcha(audio_url)
