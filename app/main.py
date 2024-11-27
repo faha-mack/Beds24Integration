@@ -255,7 +255,7 @@ async def authenticate(session_id: str, phpsessid: str = None):
     context = browser.contexts[0]
     page = context.pages[0]
     await page.goto("https://beds24.com/control2.php")
-    await page.wait_for_timeout(3000)
+    await page.wait_for_load_state('load') 
     try:
         # Wait for the reCAPTCHA iframe to load
         current_url = page.url
@@ -263,18 +263,6 @@ async def authenticate(session_id: str, phpsessid: str = None):
             cookies = await authenticator.get_cookies_from_page(page)
             return {"status": "success", "cookies": cookies}
         await page.wait_for_selector("iframe[src*='recaptcha']", timeout=10000)
-
-        # Move mouse naturally to username field
-        await authenticator.move_mouse_naturally(page, page, "input[name='username']")
-        await page.fill("input.form-control.input-sm[name='username']", username)
-        await authenticator.human_like_delay()
-        print("Username entered")
-        
-        # Move mouse naturally to password field
-        await authenticator.move_mouse_naturally(page, page, "input[name='loginpass']")
-        await page.fill("input.form-control.input-sm[name='loginpass']", password)
-        await authenticator.human_like_delay()
-        print("Password entered")
 
         # Find and switch to recaptcha frame
         recaptcha_frame = next(
@@ -285,47 +273,51 @@ async def authenticate(session_id: str, phpsessid: str = None):
         await authenticator.move_mouse_naturally(page, recaptcha_frame, "div.recaptcha-checkbox-border")
         await recaptcha_frame.click("div.recaptcha-checkbox-border")
         print("reCAPTCHA checkbox clicked")
-        await page.wait_for_load_state("networkidle")
+        await page.wait_for_timeout(3000)
         recaptcha_iframe = await page.query_selector_all("iframe[src*='recaptcha']")
-        recaptcha_frame = await recaptcha_iframe[0].content_frame()
-        checked_element = await recaptcha_frame.query_selector("#recaptcha-anchor")
-        checked = await checked_element.get_attribute("aria-checked")
-        if checked:
-            print("reCAPTCHA checkbox not checked")
-            recaptcha_iframe = await page.query_selector_all("iframe[src*='recaptcha']")
-            recaptcha_frame = await recaptcha_iframe[1].content_frame()
-            recaptcha_audio = await recaptcha_frame.query_selector("#recaptcha-audio-button")
-            while recaptcha_audio:
+        recaptcha_frame = await recaptcha_iframe[1].content_frame()
+        recaptcha_audio = await recaptcha_frame.query_selector("#recaptcha-audio-button")
+        recaptcha_image = await recaptcha_frame.query_selector("#recaptcha-image-button")
+        if recaptcha_audio or recaptcha_image:
+            if recaptcha_audio:
                 await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-audio-button")
                 audio_button = await recaptcha_frame.query_selector("#recaptcha-audio-button")
-                if audio_button == None:
-                    break
-                await authenticator.human_like_delay()
-                await audio_button.click()
-                print("Audio button clicked")
-                await authenticator.human_like_delay()
-                audio_url_element = await recaptcha_frame.query_selector("#audio-source")
-                try:
-                    audio_url = await audio_url_element.get_attribute("src")
-                except Exception as e:
-                    print("Audio not found... Trying again")
-                    return {"status": "error", "message": "Automation Detected/Audio not found... Trying again"}
-                await authenticator.human_like_delay()
-                captcha_bypass = captcha_audio_bypass.BypassAudioCaptcha(audio_url)
-                text = await captcha_bypass.run()
-                audio_input = await recaptcha_frame.query_selector("#audio-response")
-                await authenticator.move_mouse_naturally(page, recaptcha_frame, "#audio-response")
-                await audio_input.fill(text)
-                print("Audio text entered: ", text)
-                await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-verify-button")
-                verify_button = await recaptcha_frame.query_selector("#recaptcha-verify-button")
-                await verify_button.click()
-                print("Verify button clicked")
-                await page.wait_for_load_state("networkidle")
-                break
+                if audio_button != None:
+                    await authenticator.human_like_delay()
+                    await audio_button.click()
+                    print("Audio button clicked")
+            await authenticator.human_like_delay()
+            audio_url_element = await recaptcha_frame.query_selector("#audio-source")
+            try:
+                audio_url = await audio_url_element.get_attribute("src")
+            except Exception as e:
+                print("Audio not found... Trying again")
+                return {"status": "error", "message": "Automation Detected/Audio not found... Trying again"}
+            await authenticator.human_like_delay()
+            captcha_bypass = captcha_audio_bypass.BypassAudioCaptcha(audio_url)
+            text = await captcha_bypass.run()
+            audio_input = await recaptcha_frame.query_selector("#audio-response")
+            await authenticator.move_mouse_naturally(page, recaptcha_frame, "#audio-response")
+            await audio_input.fill(text)
+            print("Audio text entered: ", text)
+            await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-verify-button")
+            verify_button = await recaptcha_frame.query_selector("#recaptcha-verify-button")
+            await verify_button.click()
+            print("Verify button clicked")
+            await page.wait_for_timeout(3000)
         print("reCAPTCHA checkbox checked")
+
+        # Move mouse naturally to username field
+        await page.fill("input.form-control.input-sm[name='username']", username)
+        print("Username entered")
+        
+        # Move mouse naturally to password field
+        await page.fill("input.form-control.input-sm[name='loginpass']", password)
+        print("Password entered")
+
+        await page.wait_for_timeout(3000)
         await page.click(".b24btn_Login")
-        await page.wait_for_load_state("networkidle")
+        await page.wait_for_timeout(5000)
         current_url = page.url
         if current_url != "https://beds24.com/control2.php":
             cookies = await authenticator.get_cookies_from_page(page)
@@ -334,6 +326,12 @@ async def authenticate(session_id: str, phpsessid: str = None):
             username = os.environ.get("GMAIL_APP_EMAIL") if os.environ.get("GMAIL_APP_EMAIL") else "channel.manager@findahost.io"
             app_password = os.environ.get("GMAIL_APP_PASSWORD") if os.environ.get("GMAIL_APP_PASSWORD") else "efbdsqfyxefvtptb"
             code = await authenticator.check_gmail(username, app_password)
+            f_attempt = 0
+            while code.get('status') != 'success':
+                print("Fetching code error... Trying again in 10 seconds")
+                await page.wait_for_timeout(10000)
+                code = await authenticator.check_gmail(username, app_password)
+                f_attempt += 1
             if code.get('sender') == 'support@beds24.com':
                 login_code = code.get('code')
                 await page.fill("input[name='logincode']", str(login_code))
@@ -407,11 +405,13 @@ async def generate_session(request: SessionRequest, background_tasks: Background
     while True:
         session_id = str(uuid.uuid4())
         await start_playwright(session_id, request.email)
-        authenticated = await authenticate(session_id, None)
-        
-        if authenticated.get("status") == "success" or auth_retries >= 5:
-            break
-        await close_playwright(session_id)
+        try:
+            authenticated = await authenticate(session_id, None)
+            if authenticated.get("status") == "success" or auth_retries >= 5:
+                break
+        except Exception as e:
+            print(f"Error authenticating session {session_id}: {e}. Retrying...")
+            await close_playwright(session_id)
         auth_retries += 1
 
     if request.email:

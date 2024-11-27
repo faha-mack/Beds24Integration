@@ -65,6 +65,7 @@ async def move_mouse_naturally(page, frame, target_selector):
         await human_like_delay()
 
 async def check_gmail(username, app_password):
+    dt = datetime.now()
     try:
         # Connect to the Gmail IMAP server
         server = imapclient.IMAPClient('imap.gmail.com', ssl=True)
@@ -101,13 +102,16 @@ async def check_gmail(username, app_password):
         # Filter emails received within the past 15 minutes
         philippine_timezone = timezone(timedelta(hours=8))
         now = datetime.now(philippine_timezone)
-        twenty_four_hours_ago = now - timedelta(hours=24)
+        twenty_four_hours_ago = now - timedelta(minutes=5)
         recent_emails = [email for email in emails if datetime.strptime(email['date'], '%a, %d %b %Y %H:%M:%S %z').astimezone(philippine_timezone) > twenty_four_hours_ago]
+        if not recent_emails or len(recent_emails) == 0:
+            return {"status": "error", "message": "No recent emails found."}
         # Sort emails by date in descending order
         recent_emails.sort(key=lambda x: datetime.strptime(x['date'], '%a, %d %b %Y %H:%M:%S %z'), reverse=True)
         
         # Get the most recent email
         most_recent_email = recent_emails[0] if recent_emails else None
+
         login_code = None
         if most_recent_email and most_recent_email['body']:
             if most_recent_email['from'] == 'support@beds24.com':
@@ -122,9 +126,9 @@ async def check_gmail(username, app_password):
         server.logout()
         
         if most_recent_email:
-            return {"code": login_code, "sender": most_recent_email['from']}
+            return {"status":"success", "code": login_code, "sender": most_recent_email['from']}
         else:
-            return {"code": None, "sender": None}
+            return {"status":"error", "code": None, "sender": None}
     except Exception as e:
         traceback.print_exc()
         print("An error occurred:", e)
