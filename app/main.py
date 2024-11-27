@@ -82,7 +82,11 @@ async def load_state_from_mongodb():
 
             for session_id, session_data in state.get("active_playwrights", {}).items():
                 playwright = await async_playwright().start()
-                browser = await playwright.chromium.launch()
+                browser = await playwright.chromium.launch(
+                    headless=True,  # Use the new headless mode
+                    args=["--no-sandbox"],
+                    timeout=300000  # Increase the timeout to 300 seconds
+                )
                 context = await browser.new_context()
                 page = await context.new_page()
                 await page.goto(session_data["url"])
@@ -1002,7 +1006,7 @@ async def modify_bookingcom_property_content(
 @app.get("/", tags=["Root"])
 async def read_root():
     return {"message": "Welcome to Beds24 API"}
-    
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
