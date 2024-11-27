@@ -59,7 +59,7 @@ async def save_state_to_mongodb():
                     "local_storage": await context.storage_state()
                 }
                 for session_id, (playwright, browser, context, page) in active_playwrights.items()
-                if browser.is_connected() and context.is_connected() and page.is_connected()
+                if browser.is_connected() and not page.is_closed()
             },
             "last_access_times": last_access_times
         }
@@ -73,7 +73,6 @@ async def save_state_to_mongodb():
         print(f"Error saving state to MongoDB: {e}")
     
 async def load_state_from_mongodb():
-    print(MONGODB_URL)
     global active_playwrights, last_access_times
     try:
         state_data = await sessions_collection.find_one({"_id": "playwright_state"})
@@ -1000,7 +999,10 @@ async def modify_bookingcom_property_content(
     return response
     
 
-
+@app.get("/", tags=["Root"])
+async def read_root():
+    return {"message": "Welcome to Beds24 API"}
+    
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
