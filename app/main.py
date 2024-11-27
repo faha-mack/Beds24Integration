@@ -268,11 +268,13 @@ async def authenticate(session_id: str, phpsessid: str = None):
         await authenticator.move_mouse_naturally(page, page, "input[name='username']")
         await page.fill("input.form-control.input-sm[name='username']", username)
         await authenticator.human_like_delay()
+        print("Username entered")
         
         # Move mouse naturally to password field
         await authenticator.move_mouse_naturally(page, page, "input[name='loginpass']")
         await page.fill("input.form-control.input-sm[name='loginpass']", password)
         await authenticator.human_like_delay()
+        print("Password entered")
 
         # Find and switch to recaptcha frame
         recaptcha_frame = next(
@@ -282,7 +284,8 @@ async def authenticate(session_id: str, phpsessid: str = None):
                 
         await authenticator.move_mouse_naturally(page, recaptcha_frame, "div.recaptcha-checkbox-border")
         await recaptcha_frame.click("div.recaptcha-checkbox-border")
-        await authenticator.human_like_delay()
+        print("reCAPTCHA checkbox clicked")
+        await page.wait_for_load_state("networkidle")
         recaptcha_iframe = await page.query_selector_all("iframe[src*='recaptcha']")
         recaptcha_frame = await recaptcha_iframe[0].content_frame()
         checked_element = await recaptcha_frame.query_selector("#recaptcha-anchor")
@@ -311,15 +314,15 @@ async def authenticate(session_id: str, phpsessid: str = None):
                 audio_input = await recaptcha_frame.query_selector("#audio-response")
                 await authenticator.move_mouse_naturally(page, recaptcha_frame, "#audio-response")
                 await audio_input.fill(text)
+                print("Audio text entered: ", text)
                 await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-verify-button")
                 verify_button = await recaptcha_frame.query_selector("#recaptcha-verify-button")
                 await verify_button.click()
-                await page.wait_for_timeout(2000)
+                await page.wait_for_load_state("networkidle")
                 break
         print("reCAPTCHA checkbox checked")
-        await authenticator.move_mouse_naturally(page, page, ".b24btn_Login")
         await page.click(".b24btn_Login")
-        await page.wait_for_timeout(5000)
+        await page.wait_for_load_state("networkidle")
         current_url = page.url
         if current_url != "https://beds24.com/control2.php":
             cookies = await authenticator.get_cookies_from_page(page)
