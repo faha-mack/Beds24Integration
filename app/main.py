@@ -328,6 +328,8 @@ async def authenticate(session_id: str, phpsessid: str = None):
             code = await authenticator.check_gmail(username, app_password)
             f_attempt = 0
             while code.get('status') != 'success':
+                print("Username: ", username)
+                print("App Password: ", app_password)
                 print("Fetching code error... Trying again in 10 seconds")
                 await page.wait_for_timeout(10000)
                 code = await authenticator.check_gmail(username, app_password)
