@@ -319,30 +319,37 @@ async def authenticate(session_id: str, phpsessid: str = None):
             print("Verify button clicked")
             await page.wait_for_timeout(3000)
         print("reCAPTCHA checkbox checked")
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(1000)
         await page.click(".b24btn_Login")
-        await page.wait_for_timeout(5000)
+        print("Login button clicked")
+        await page.wait_for_timeout(3000)
         current_url = page.url
         if current_url != "https://beds24.com/control2.php":
             cookies = await authenticator.get_cookies_from_page(page)
             return {"status": "success", "cookies": cookies}
         else:
+            print("Initializing otp retrieval")
             username = os.environ.get("GMAIL_APP_EMAIL") if os.environ.get("GMAIL_APP_EMAIL") else "channel.manager@findahost.io"
             app_password = os.environ.get("GMAIL_APP_PASSWORD") if os.environ.get("GMAIL_APP_PASSWORD") else "efbdsqfyxefvtptb"
             code = await authenticator.check_gmail(username, app_password)
+            print(f"Code on iteration -1: {code}")
             f_attempt = 0
             while code.get('status') != 'success':
                 await page.wait_for_timeout(10000)
                 code = await authenticator.check_gmail(username, app_password)
+                print(f"Code on iteration {f_attempt}: {code}")
                 f_attempt += 1
             if code.get('sender') == 'support@beds24.com':
+                print("Code is login code")
                 login_code = code.get('code')
                 await page.fill("input[name='logincode']", str(login_code))
-                await page.wait_for_timeout(10000)
+                await page.wait_for_timeout(1000)
                 await page.click("button[type='submit']")
+                print("Login code entered and submitted")
                 await page.wait_for_timeout(3000)
                 current_url = page.url
                 if current_url != "https://beds24.com/control2.php":
+                    print("Logged in successfully")
                     try:
                         cookies_ = await authenticator.get_cookies_from_page(page)
                         cookies, local_storage = await save_context_state(context)
@@ -355,10 +362,12 @@ async def authenticate(session_id: str, phpsessid: str = None):
                         traceback.print_exc()
                         return {"status": "error", "message": str(e)}
             elif code.get('sender') == 'ticket@beds24.com':
+                print("Code is URL")
                 await page.goto(code.get('code'))
                 await page.wait_for_timeout(3000)
                 current_url = page.url
                 if current_url != "https://beds24.com/control2.php":
+                    print("Logged in successfully")
                     cookies_ = await authenticator.get_cookies_from_page(page)
                     cookies, local_storage = await save_context_state(context)
                     await switch_to_headless(session_id)
