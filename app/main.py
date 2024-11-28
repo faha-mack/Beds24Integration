@@ -414,6 +414,9 @@ async def generate_session(request: SessionRequest, background_tasks: Background
             authenticated = await authenticate(session_id, None)
             if authenticated.get("status") == "success" or auth_retries >= 5:
                 break
+            else:
+                print(f"Error authenticating session {session_id}: {e}. Retrying...")
+                await close_playwright(session_id)
         except Exception as e:
             print(f"Error authenticating session {session_id}: {e}. Retrying...")
             await close_playwright(session_id)
