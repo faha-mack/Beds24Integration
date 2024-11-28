@@ -167,17 +167,15 @@ async def periodic_cleanup():
         await save_state_to_mongodb()
 
 async def close_playwright(session_id: str):
-    if session_id in active_playwrights:
-        playwright, browser, context, page = active_playwrights[session_id]
-        try:
-            await browser.close()
-        except Exception as e:
-            print(f"Error closing browser for session {session_id}: {e}")
-        try:
-            await playwright.stop()
-        except Exception as e:
-            print(f"Error stopping playwright for session {session_id}: {e}")
-        
+    playwright, browser, context, page = active_playwrights[session_id]
+    try:
+        await browser.close()
+    except Exception as e:
+        print(f"Error closing browser for session {session_id}: {e}")
+    try:
+        await playwright.stop()
+    except Exception as e:
+        print(f"Error stopping playwright for session {session_id}: {e}")
     await sessions_collection.delete_one({"_id": session_id})
 
 async def get_browser(session_id: str) -> Browser:
@@ -419,7 +417,8 @@ async def generate_session(request: SessionRequest, background_tasks: Background
             print(f"Error authenticating session {session_id}: {e}. Retrying...")
             await close_playwright(session_id)
         auth_retries += 1
-
+        if(auth_retries >= 5):
+            return {"status": "error", "message": "Failed to authenticate session"}
     if request.email:
         user_switched = await switch_user(session_id, request.email)
         if user_switched.get("status") == "error":
