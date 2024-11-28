@@ -251,7 +251,7 @@ async def authenticate(session_id: str, phpsessid: str = None):
     context = browser.contexts[0]
     page = context.pages[0]
     await page.goto("https://beds24.com/control2.php")
-    await page.wait_for_load_state('load') 
+    await page.wait_for_timeout(3000)
     try:
         # Wait for the reCAPTCHA iframe to load
         current_url = page.url
