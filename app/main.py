@@ -279,13 +279,16 @@ async def authenticate(session_id: str, phpsessid: str = None):
         recaptcha_audio = await recaptcha_frame.query_selector("#recaptcha-audio-button")
         recaptcha_image = await recaptcha_frame.query_selector("#recaptcha-image-button")
         if recaptcha_audio or recaptcha_image:
-            if recaptcha_audio:
-                await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-audio-button")
-                audio_button = await recaptcha_frame.query_selector("#recaptcha-audio-button")
-                if audio_button != None:
-                    await authenticator.human_like_delay()
-                    await audio_button.click()
-                    print("Audio button clicked")
+            try:
+                if recaptcha_audio:
+                    await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-audio-button")
+                    audio_button = await recaptcha_frame.query_selector("#recaptcha-audio-button")
+                    if audio_button != None:
+                        await authenticator.human_like_delay()
+                        await audio_button.click()
+                        print("Audio button clicked")
+            except Exception as e:
+                print("Audio button not found... Continuing")
             await authenticator.human_like_delay()
             audio_url_element = await recaptcha_frame.query_selector("#audio-source")
             try:
