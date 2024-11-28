@@ -261,16 +261,16 @@ async def authenticate(session_id: str, phpsessid: str = None):
 
         print(page.url)
         # Move mouse naturally to username field
-        authenticator.move_mouse_naturally(page, "input.form-control.input-sm[name='username']")
+        await authenticator.move_mouse_naturally(page, page, "input[name='username']")
         await page.fill("input.form-control.input-sm[name='username']", username)
         print("Username entered")
-        authenticator.human_like_delay()
+        await authenticator.human_like_delay()
         
         # Move mouse naturally to password field
-        authenticator.move_mouse_naturally(page, "input.form-control.input-sm[name='loginpass']")
+        await authenticator.move_mouse_naturally(page, page, "input[name='loginpass']")
         await page.fill("input.form-control.input-sm[name='loginpass']", password)
         print("Password entered")
-        authenticator.human_like_delay()
+        await authenticator.human_like_delay()
 
         await page.wait_for_selector("iframe[src*='recaptcha']", timeout=10000)
 
