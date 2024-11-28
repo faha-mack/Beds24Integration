@@ -416,6 +416,7 @@ async def generate_session(request: SessionRequest, background_tasks: Background
                 print(f"Error authenticating session {session_id} Retrying...")
                 await close_playwright(session_id)
         except Exception as e:
+            traceback.print_exc()
             print(f"Error authenticating session {session_id}: {e}. Retrying...")
             await close_playwright(session_id)
         auth_retries += 1
