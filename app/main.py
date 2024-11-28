@@ -8,7 +8,6 @@ from bson import json_util
 import traceback
 from fastapi import Body, FastAPI, HTTPException, BackgroundTasks, Request, logger
 from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from playwright.async_api import async_playwright, Browser, TimeoutError as PlaywrightTimeoutError
@@ -47,7 +46,6 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 async def save_state_to_mongodb():
     try:
