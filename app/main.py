@@ -258,6 +258,20 @@ async def authenticate(session_id: str, phpsessid: str = None):
         if current_url != "https://beds24.com/control2.php":
             cookies = await authenticator.get_cookies_from_page(page)
             return {"status": "success", "cookies": cookies}
+
+        print(page.url)
+        # Move mouse naturally to username field
+        authenticator.move_mouse_naturally(page, "input.form-control.input-sm[name='username']")
+        await page.fill("input.form-control.input-sm[name='username']", username)
+        print("Username entered")
+        authenticator.human_like_delay()
+        
+        # Move mouse naturally to password field
+        authenticator.move_mouse_naturally(page, "input.form-control.input-sm[name='loginpass']")
+        await page.fill("input.form-control.input-sm[name='loginpass']", password)
+        print("Password entered")
+        authenticator.human_like_delay()
+
         await page.wait_for_selector("iframe[src*='recaptcha']", timeout=10000)
 
         # Find and switch to recaptcha frame
@@ -305,15 +319,6 @@ async def authenticate(session_id: str, phpsessid: str = None):
             print("Verify button clicked")
             await page.wait_for_timeout(3000)
         print("reCAPTCHA checkbox checked")
-
-        # Move mouse naturally to username field
-        await page.fill("input.form-control.input-sm[name='username']", username)
-        print("Username entered")
-        
-        # Move mouse naturally to password field
-        await page.fill("input.form-control.input-sm[name='loginpass']", password)
-        print("Password entered")
-
         await page.wait_for_timeout(3000)
         await page.click(".b24btn_Login")
         await page.wait_for_timeout(5000)
@@ -327,9 +332,6 @@ async def authenticate(session_id: str, phpsessid: str = None):
             code = await authenticator.check_gmail(username, app_password)
             f_attempt = 0
             while code.get('status') != 'success':
-                print("Username: ", username)
-                print("App Password: ", app_password)
-                print("Fetching code error... Trying again in 10 seconds")
                 await page.wait_for_timeout(10000)
                 code = await authenticator.check_gmail(username, app_password)
                 f_attempt += 1
@@ -408,9 +410,10 @@ async def generate_session(request: SessionRequest, background_tasks: Background
         await start_playwright(session_id, request.email)
         try:
             authenticated = await authenticate(session_id, None)
-            if authenticated.get("status") == "success" or auth_retries >= 5:
+            if authenticated.get("status") == "success":
                 break
             else:
+                print(f"Error authenticating session {session_id} Retrying...")
                 await close_playwright(session_id)
         except Exception as e:
             print(f"Error authenticating session {session_id}: {e}. Retrying...")
