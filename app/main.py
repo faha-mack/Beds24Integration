@@ -339,6 +339,9 @@ async def authenticate(session_id: str, phpsessid: str = None):
                 code = await authenticator.check_gmail(username, app_password)
                 print(f"Code on iteration {f_attempt}: {code}")
                 f_attempt += 1
+                asyncio.sleep(10)
+                if f_attempt == 10:
+                    return {"status": "error", "message": "Failed to retrieve OTP code"}
             if code.get('sender') == 'support@beds24.com':
                 print("Code is login code")
                 login_code = code.get('code')
