@@ -480,7 +480,7 @@ class PricingSettings(BaseModel):
     lastminutediscountpercent: LastMinuteDiscountPercent
 
 class SessionRequest(BaseModel):
-    email: Optional[str]
+    username: Optional[str]
 
 class Custom(BaseModel):
     custom: str

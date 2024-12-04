@@ -106,7 +106,7 @@ async def load_state_from_mongodb():
         traceback.print_exc()
         print(f"Error loading state from MongoDB: {e}")
         
-async def start_playwright(session_id: str, email: str):
+async def start_playwright(session_id: str, username: str):
     try:
         playwright = await async_playwright().start()
         browser = await playwright.chromium.launch()
@@ -126,7 +126,7 @@ async def start_playwright(session_id: str, email: str):
     # Record only the session ID and status in the database
     await sessions_collection.insert_one({
         "_id": session_id,
-        "email": email,
+        "username": username,
         "in_use": True,
         "created_at": datetime.datetime.now(timezone.utc)
     })
@@ -386,13 +386,51 @@ async def authenticate(session_id: str, phpsessid: str = None):
         traceback.print_exc()
         return {"status":"error", "message":"reCAPTCHA not found or timeout"}
 
-async def get_current_user_refresh_token(user_email):
-    user = await refresh_tokens_collection.find_one({"email": user_email})
-    print('user', user)
-    if user:
-        return user.get("refresh_token")
-    else:
-        return None
+async def get_invite_code(session_id: str):
+    browser = await get_browser(session_id)
+    context = browser.contexts[0]
+    page = context.pages[0]
+    await page.goto("https://beds24.com/control3.php?pagetype=apiv2")
+    await page.wait_for_timeout(2000)
+    button = await page.query_selector("#settingformid > div > div > div > div.card-body > button") 
+    await button.click()
+    await page.wait_for_timeout(2000)
+    readall = await page.query_selector("#massSelectorReadAll")
+    await readall.click()
+    writeall = await page.query_selector("#massSelectorWriteAll")
+    await writeall.click()
+    deleteall = await page.query_selector("#massSelectorDeleteAll")
+    await deleteall.click()
+    access_selector = await page.query_selector("#scopePropertySelect")
+    await access_selector.select_option("1")
+    submite = await page.query_selector("#scopeModalSubmit")
+    await submite.click()
+    await page.wait_for_timeout(1000)
+    invite_code = await page.query_selector("#invitetokenlisttable > tbody > tr > td.sorting_1 > span")
+    return await invite_code.inner_text()
+
+    
+
+async def get_current_user_refresh_token(invite_code):
+    # user = await refresh_tokens_collection.find_one({"email": user_email})
+    # if user:
+    #     return user.get("refresh_token")
+    # else:
+    #     return None
+    url = "https://beds24.com/api/v2/authentication/setup"
+    headers = {
+        "accept": "application/json",
+        "code": invite_code,
+        "deviceName": "findahost"
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code == 200:
+            r = response.json()
+            return r
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
 
 async def get_authtoken_from_refresh_token(refresh_token):
     url = "https://beds24.com/api/v2/authentication/token"
@@ -409,7 +447,6 @@ async def get_authtoken_from_refresh_token(refresh_token):
         else:
             raise HTTPException(status_code=response.status_code, detail=response.text)
 
-
 @app.post("/generate_session", tags=["Utilities"])
 async def generate_session(request: SessionRequest, background_tasks: BackgroundTasks):
     load_dotenv()
@@ -419,7 +456,7 @@ async def generate_session(request: SessionRequest, background_tasks: Background
 
     while True:
         session_id = str(uuid.uuid4())
-        await start_playwright(session_id, request.email)
+        await start_playwright(session_id, request.username)
         try:
             authenticated = await authenticate(session_id, None)
             if authenticated.get("status") == "success":
@@ -434,8 +471,8 @@ async def generate_session(request: SessionRequest, background_tasks: Background
         auth_retries += 1
         if(auth_retries >= 5):
             return {"status": "error", "message": "Failed to authenticate session"}
-    if request.email:
-        user_switched = await switch_user(session_id, request.email)
+    if request.username:
+        user_switched = await switch_user(session_id, request.username)
         if user_switched.get("status") == "error":
             return {"status": "error", "session_id": session_id, "message": user_switched.get("message")}
         return {"status": "success", "session_id": session_id, "cookies": authenticated.get("cookies")}
@@ -473,7 +510,7 @@ async def get_session_information(session_id: str):
         return {"status": "error", "message": "Session is not authenticated"}
 
 @app.get("/switch-user", tags=["Utilities"])
-async def switch_user(session_id: str, user_email: str):
+async def switch_user(session_id: str, username: str):
     try:
         browser, context, page = await get_session_instance(session_id)
         await page.goto("https://beds24.com/controladmin.php")
@@ -483,7 +520,7 @@ async def switch_user(session_id: str, user_email: str):
             await password_element.fill("P0s>b.m2s4]e")
             await page.click("#settingformid > div > div.innerbackground_boxhide > div.setting_footer_section > button")
             await page.wait_for_selector('#_accountlist_admintable')
-        selector = f'//table[@id="_accountlist_admintable"]//tr[td[3][normalize-space()="{user_email}"]]//button[@value="Log into Account"]'
+        selector = f'//table[@id="_accountlist_admintable"]//tr[td[2][normalize-space()="{username}"]]//button[@value="Log into Account"]'
         await page.click(selector)
         await page.wait_for_timeout(1000)
         await save_state_to_mongodb()
@@ -491,18 +528,19 @@ async def switch_user(session_id: str, user_email: str):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/get_new_token_from_session", tags=["Utilities"])
+@app.get("/get_refresh_token_from_session", tags=["Utilities"])
 async def get_fresh_token_from_session(session_id: str):
     is_authenticated = await test_session(session_id)
     if is_authenticated.get("status") == "success":
         username_fetch = await get_session_information(session_id)
         username = username_fetch.get("username")
         print('username', username)
-        current_refresh_token = await get_current_user_refresh_token(username)
+        invite_code = await get_invite_code(session_id)
+        print("invite_code: ", invite_code)
+        current_refresh_token = await get_current_user_refresh_token(invite_code)
         print('current_refresh_token', current_refresh_token)
         if current_refresh_token:
-            token = await get_authtoken_from_refresh_token(current_refresh_token)
-            return {"status": "success", "token": token}
+            return {"status": "success", "token": current_refresh_token}
         else:
             return {"status": "error", "message": "Refresh token not found for user "+username}
         
