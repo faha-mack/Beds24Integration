@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 import uuid
 import os
 import authenticator
+from hardBypass import HardBypass
 from dotenv import load_dotenv
 from models import CheckOutInstructions, Descriptions, ListingDetails, PricingSettings, SessionRequest, BookingRules
 from models import Custom, PropertyDetails, PropertyProfile, InvoicesContact, ReservationsContact, Policies
@@ -253,13 +254,12 @@ async def authenticate(session_id: str, phpsessid: str = None):
     await page.goto("https://beds24.com/control2.php")
     await page.wait_for_timeout(3000)
     try:
-        # Wait for the reCAPTCHA iframe to load
+       # Wait for the reCAPTCHA iframe to load
         current_url = page.url
         if current_url != "https://beds24.com/control2.php":
             cookies = await authenticator.get_cookies_from_page(page)
             return {"status": "success", "cookies": cookies}
-
-        print(page.url)
+            
         # Move mouse naturally to username field
         await authenticator.move_mouse_naturally(page, page, "input[name='username']")
         await page.fill("input.form-control.input-sm[name='username']", username)
@@ -301,11 +301,55 @@ async def authenticate(session_id: str, phpsessid: str = None):
                 print("Audio button not found... Continuing")
             await authenticator.human_like_delay()
             audio_url_element = await recaptcha_frame.query_selector("#audio-source")
+            hard_bypass_used = False
             try:
                 audio_url = await audio_url_element.get_attribute("src")
             except Exception as e:
-                print("Audio not found... Trying again")
-                return {"status": "error", "message": "Automation Detected/Audio not found... Trying again"}
+                print("Audio not found... Doing hard bypass")
+                hard_bypass_used = True
+                # Do hard bypass
+                # Get site url and site key
+                site_url = page.url
+                site_key = await page.query_selector("#settingformid > div > div.innerbackground_box.innerbackground_box_2 > div.g-recaptcha")
+                site_key = await site_key.get_attribute("data-sitekey")
+                print("Initializing hard bypass with site url: ", site_url, " and site key: ", site_key)
+                bypass = HardBypass("3e7b41810dmsh36643b0730bb46fp1ab16bjsnf465416451bc")
+                captcha_solver_result = await bypass.solve_captcha(site_url, site_key)
+                await page.evaluate("""
+                    async ({ username, password, captchaResponse }) => {
+                        const formData = new FormData();
+                        formData.append('id', '');
+                        formData.append('pagetype', 'login');
+                        formData.append('jquerysubmit', '1');
+                        formData.append('_t', '');
+                        formData.append('username', username);
+                        formData.append('loginpass', password);
+                        formData.append('loginstay', '1');
+                        formData.append('g-recaptcha-response', captchaResponse);
+                        formData.append('dosubmit', 'Login');
+                        formData.append('subbookid', '');
+                        formData.append('sublogin', '1');
+
+                        const response = await fetch('https://beds24.com/control2.php?pagetype=login', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                                'accept-language': 'en-US,en;q=0.9',
+                                'cache-control': 'max-age=0',
+                                'sec-fetch-dest': 'document',
+                                'sec-fetch-mode': 'navigate',
+                                'sec-fetch-site': 'same-origin',
+                                'sec-fetch-user': '?1',
+                                'upgrade-insecure-requests': '1'
+                            },
+                            credentials: 'include'
+                        });
+
+                        return response.ok;
+                    }
+                """, {"username": username, "password": password, "captchaResponse": captcha_solver_result})
+        if hard_bypass_used:
             await authenticator.human_like_delay()
             captcha_bypass = captcha_audio_bypass.BypassAudioCaptcha(audio_url)
             text = await captcha_bypass.run()
@@ -318,11 +362,14 @@ async def authenticate(session_id: str, phpsessid: str = None):
             await verify_button.click()
             print("Verify button clicked")
             await page.wait_for_timeout(3000)
-        print("reCAPTCHA checkbox checked")
-        await page.wait_for_timeout(1000)
-        await page.click(".b24btn_Login")
-        print("Login button clicked")
-        await page.wait_for_timeout(3000)
+        else:
+            print("reCAPTCHA checkbox checked")
+            await page.wait_for_timeout(1000)
+            await page.click(".b24btn_Login")
+            print("Login button clicked")
+            await page.wait_for_timeout(3000)
+
+        
         current_url = page.url
         if current_url != "https://beds24.com/control2.php":
             cookies = await authenticator.get_cookies_from_page(page)
