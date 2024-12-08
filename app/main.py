@@ -247,7 +247,7 @@ async def authenticate(session_id: str, phpsessid: str = None):
         return {"status": "success", "cookies": cookies}
     username = os.environ.get("BEDS24_USERNAME") if os.environ.get("BEDS24_USERNAME") else "channel.manager"
     password = os.environ.get("BEDS24_PASSWORD") if os.environ.get("BEDS24_PASSWORD") else "P0s>b.m2s4]e"
-    await switch_to_non_headless(session_id)
+    # await switch_to_non_headless(session_id)
     browser = await get_browser(session_id)
     context = browser.contexts[0]
     page = context.pages[0]
@@ -261,113 +261,115 @@ async def authenticate(session_id: str, phpsessid: str = None):
             return {"status": "success", "cookies": cookies}
             
         # Move mouse naturally to username field
-        await authenticator.move_mouse_naturally(page, page, "input[name='username']")
-        await page.fill("input.form-control.input-sm[name='username']", username)
-        print("Username entered")
-        await authenticator.human_like_delay()
+        # await authenticator.move_mouse_naturally(page, page, "input[name='username']")
+        # await page.fill("input.form-control.input-sm[name='username']", username)
+        # print("Username entered")
+        # await authenticator.human_like_delay()
         
         # Move mouse naturally to password field
-        await authenticator.move_mouse_naturally(page, page, "input[name='loginpass']")
-        await page.fill("input.form-control.input-sm[name='loginpass']", password)
-        print("Password entered")
-        await authenticator.human_like_delay()
+        # await authenticator.move_mouse_naturally(page, page, "input[name='loginpass']")
+        # await page.fill("input.form-control.input-sm[name='loginpass']", password)
+        # print("Password entered")
+        # await authenticator.human_like_delay()
 
         await page.wait_for_selector("iframe[src*='recaptcha']", timeout=10000)
 
-        # Find and switch to recaptcha frame
-        recaptcha_frame = next(
-            frame for frame in page.frames 
-            if "recaptcha" in frame.url
-        )
+        # # Find and switch to recaptcha frame
+        # recaptcha_frame = next(
+        #     frame for frame in page.frames 
+        #     if "recaptcha" in frame.url
+        # )
                 
-        await authenticator.move_mouse_naturally(page, recaptcha_frame, "div.recaptcha-checkbox-border")
-        await recaptcha_frame.click("div.recaptcha-checkbox-border")
-        print("reCAPTCHA checkbox clicked")
-        await page.wait_for_timeout(3000)
-        recaptcha_iframe = await page.query_selector_all("iframe[src*='recaptcha']")
-        recaptcha_frame = await recaptcha_iframe[1].content_frame()
-        recaptcha_audio = await recaptcha_frame.query_selector("#recaptcha-audio-button")
-        recaptcha_image = await recaptcha_frame.query_selector("#recaptcha-image-button")
-        if recaptcha_audio or recaptcha_image:
-            try:
-                if recaptcha_audio:
-                    await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-audio-button")
-                    audio_button = await recaptcha_frame.query_selector("#recaptcha-audio-button")
-                    if audio_button != None:
-                        await authenticator.human_like_delay()
-                        await audio_button.click()
-                        print("Audio button clicked")
-            except Exception as e:
-                print("Audio button not found... Continuing")
-            await authenticator.human_like_delay()
-            audio_url_element = await recaptcha_frame.query_selector("#audio-source")
-            hard_bypass_used = False
-            try:
-                audio_url = await audio_url_element.get_attribute("src")
-            except Exception as e:
-                print("Audio not found... Doing hard bypass")
-                hard_bypass_used = True
-                # Do hard bypass
-                # Get site url and site key
-                site_url = page.url
-                site_key = await page.query_selector("#settingformid > div > div.innerbackground_box.innerbackground_box_2 > div.g-recaptcha")
-                site_key = await site_key.get_attribute("data-sitekey")
-                print("Initializing hard bypass with site url: ", site_url, " and site key: ", site_key)
-                bypass = HardBypass("3e7b41810dmsh36643b0730bb46fp1ab16bjsnf465416451bc")
-                captcha_solver_result = await bypass.solve_captcha(site_url, site_key)
-                await page.evaluate("""
-                    async ({ username, password, captchaResponse }) => {
-                        const formData = new FormData();
-                        formData.append('id', '');
-                        formData.append('pagetype', 'login');
-                        formData.append('jquerysubmit', '1');
-                        formData.append('_t', '');
-                        formData.append('username', username);
-                        formData.append('loginpass', password);
-                        formData.append('loginstay', '1');
-                        formData.append('g-recaptcha-response', captchaResponse);
-                        formData.append('dosubmit', 'Login');
-                        formData.append('subbookid', '');
-                        formData.append('sublogin', '1');
+        # await authenticator.move_mouse_naturally(page, recaptcha_frame, "div.recaptcha-checkbox-border")
+        # await recaptcha_frame.click("div.recaptcha-checkbox-border")
+        # print("reCAPTCHA checkbox clicked")
+        # await page.wait_for_timeout(3000)
+        # recaptcha_iframe = await page.query_selector_all("iframe[src*='recaptcha']")
+        # recaptcha_frame = await recaptcha_iframe[1].content_frame()
+        # recaptcha_audio = await recaptcha_frame.query_selector("#recaptcha-audio-button")
+        # recaptcha_image = await recaptcha_frame.query_selector("#recaptcha-image-button")
+        # if recaptcha_audio or recaptcha_image:
+        #     try:
+        #         if recaptcha_audio:
+        #             await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-audio-button")
+        #             audio_button = await recaptcha_frame.query_selector("#recaptcha-audio-button")
+        #             if audio_button != None:
+        #                 await authenticator.human_like_delay()
+        #                 await audio_button.click()
+        #                 print("Audio button clicked")
+        #     except Exception as e:
+        #         print("Audio button not found... Continuing")
+        #     await authenticator.human_like_delay()
+        #     audio_url_element = await recaptcha_frame.query_selector("#audio-source")
+        #     hard_bypass_used = False
+        #     try:
+        #         audio_url = await audio_url_element.get_attribute("src")
+        #     except Exception as e:
+        #         print("Audio not found... Doing hard bypass")
+        #         hard_bypass_used = True
+        #         # Do hard bypass
+        #         # Get site url and site key
+        site_url = page.url
+        site_key = await page.query_selector("#settingformid > div > div.innerbackground_box.innerbackground_box_2 > div.g-recaptcha")
+        site_key = await site_key.get_attribute("data-sitekey")
+        print("Initializing hard bypass with site url: ", site_url, " and site key: ", site_key)
+        bypass = HardBypass()
+        captcha_solver_result = await bypass.solve_captcha(site_url, site_key)
+        print("Captcha solved")
+        print("Sending login request")
+        await page.evaluate("""
+            async ({ username, password, captchaResponse }) => {
+                const formData = new FormData();
+                formData.append('id', '');
+                formData.append('pagetype', 'login');
+                formData.append('jquerysubmit', '1');
+                formData.append('_t', '');
+                formData.append('username', username);
+                formData.append('loginpass', password);
+                formData.append('loginstay', '1');
+                formData.append('g-recaptcha-response', captchaResponse);
+                formData.append('dosubmit', 'Login');
+                formData.append('subbookid', '');
+                formData.append('sublogin', '1');
 
-                        const response = await fetch('https://beds24.com/control2.php?pagetype=login', {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                                'accept-language': 'en-US,en;q=0.9',
-                                'cache-control': 'max-age=0',
-                                'sec-fetch-dest': 'document',
-                                'sec-fetch-mode': 'navigate',
-                                'sec-fetch-site': 'same-origin',
-                                'sec-fetch-user': '?1',
-                                'upgrade-insecure-requests': '1'
-                            },
-                            credentials: 'include'
-                        });
+                const response = await fetch('https://beds24.com/control2.php?pagetype=login', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                        'accept-language': 'en-US,en;q=0.9',
+                        'cache-control': 'max-age=0',
+                        'sec-fetch-dest': 'document',
+                        'sec-fetch-mode': 'navigate',
+                        'sec-fetch-site': 'same-origin',
+                        'sec-fetch-user': '?1',
+                        'upgrade-insecure-requests': '1'
+                    },
+                    credentials: 'include'
+                });
 
-                        return response.ok;
-                    }
-                """, {"username": username, "password": password, "captchaResponse": captcha_solver_result})
-        if hard_bypass_used:
-            await authenticator.human_like_delay()
-            captcha_bypass = captcha_audio_bypass.BypassAudioCaptcha(audio_url)
-            text = await captcha_bypass.run()
-            audio_input = await recaptcha_frame.query_selector("#audio-response")
-            await authenticator.move_mouse_naturally(page, recaptcha_frame, "#audio-response")
-            await audio_input.fill(text)
-            print("Audio text entered: ", text)
-            await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-verify-button")
-            verify_button = await recaptcha_frame.query_selector("#recaptcha-verify-button")
-            await verify_button.click()
-            print("Verify button clicked")
-            await page.wait_for_timeout(3000)
-        else:
-            print("reCAPTCHA checkbox checked")
-            await page.wait_for_timeout(1000)
-            await page.click(".b24btn_Login")
-            print("Login button clicked")
-            await page.wait_for_timeout(3000)
+                return response.ok;
+            }
+        """, {"username": username, "password": password, "captchaResponse": captcha_solver_result})
+        # if hard_bypass_used:
+        #     await authenticator.human_like_delay()
+        #     captcha_bypass = captcha_audio_bypass.BypassAudioCaptcha(audio_url)
+        #     text = await captcha_bypass.run()
+        #     audio_input = await recaptcha_frame.query_selector("#audio-response")
+        #     await authenticator.move_mouse_naturally(page, recaptcha_frame, "#audio-response")
+        #     await audio_input.fill(text)
+        #     print("Audio text entered: ", text)
+        #     await authenticator.move_mouse_naturally(page, recaptcha_frame, "#recaptcha-verify-button")
+        #     verify_button = await recaptcha_frame.query_selector("#recaptcha-verify-button")
+        #     await verify_button.click()
+        #     print("Verify button clicked")
+        #     await page.wait_for_timeout(3000)
+        # else:
+        #     print("reCAPTCHA checkbox checked")
+        #     await page.wait_for_timeout(1000)
+        #     await page.click(".b24btn_Login")
+        #     print("Login button clicked")
+        #     await page.wait_for_timeout(3000)
 
         
         current_url = page.url
