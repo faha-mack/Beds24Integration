@@ -388,7 +388,7 @@ async def authenticate(session_id: str, phpsessid: str = None):
                 code = await authenticator.check_gmail(username, app_password)
                 print(f"Code on iteration {f_attempt}: {code}")
                 f_attempt += 1
-                asyncio.sleep(10)
+                await asyncio.sleep(10)
                 if f_attempt == 10:
                     return {"status": "error", "message": "Failed to retrieve OTP code"}
             if code.get('sender') == 'support@beds24.com':
@@ -404,11 +404,11 @@ async def authenticate(session_id: str, phpsessid: str = None):
                     print("Logged in successfully")
                     try:
                         cookies_ = await authenticator.get_cookies_from_page(page)
-                        cookies, local_storage = await save_context_state(context)
-                        await switch_to_headless(session_id)
-                        browser = await get_browser(session_id)
-                        context = browser.contexts[0]
-                        await restore_context_state(context, cookies, local_storage)
+                        # cookies, local_storage = await save_context_state(context)
+                        # await switch_to_headless(session_id)
+                        # browser = await get_browser(session_id)
+                        # context = browser.contexts[0]
+                        # await restore_context_state(context, cookies, local_storage)
                         return {"status": "success", "cookies": cookies_}
                     except Exception as e:
                         traceback.print_exc()
@@ -421,11 +421,11 @@ async def authenticate(session_id: str, phpsessid: str = None):
                 if current_url != "https://beds24.com/control2.php":
                     print("Logged in successfully")
                     cookies_ = await authenticator.get_cookies_from_page(page)
-                    cookies, local_storage = await save_context_state(context)
-                    await switch_to_headless(session_id)
-                    browser = await get_browser(session_id)
-                    context = browser.contexts[0]
-                    await restore_context_state(context, cookies, local_storage)
+                    # cookies, local_storage = await save_context_state(context)
+                    # await switch_to_headless(session_id)
+                    # browser = await get_browser(session_id)
+                    # context = browser.contexts[0]
+                    # await restore_context_state(context, cookies, local_storage)
                     return {"status": "success", "cookies": cookies_}
             await save_state_to_mongodb()
         
