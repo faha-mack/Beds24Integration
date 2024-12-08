@@ -1,15 +1,15 @@
-import asyncio
+# import asyncio
 import random
-import time
+# import time
 import traceback
-import bezier
+# import bezier
 import imapclient
-import numpy as np
+# import numpy as np
 import pyzmail
 from datetime import datetime, timedelta, timezone
 import re
 from dotenv import load_dotenv
-import os
+# import os
 
 load_dotenv()
 
@@ -17,20 +17,20 @@ def get_cookies_from_page(page):
     cookies = page.context.cookies()
     return cookies
 
-async def human_like_delay():
-    await asyncio.sleep(random.uniform(0.1, 0.8))
+# async def human_like_delay():
+#     await asyncio.sleep(random.uniform(0.1, 0.8))
 
-def get_bezier_curve(start, end, control_points=2):
-    points = [start]
-    # Generate random control points between start and end
-    for _ in range(control_points):
-        points.append([
-            random.randint(int(min(start[0], end[0])), int(max(start[0], end[0]))),
-            random.randint(int(min(start[1], end[1])), int(max(start[1], end[1])))
-        ])
-    points.append(end)
-    nodes = np.asfortranarray(points).T
-    return bezier.Curve(nodes, degree=control_points + 1)
+# def get_bezier_curve(start, end, control_points=2):
+#     points = [start]
+#     # Generate random control points between start and end
+#     for _ in range(control_points):
+#         points.append([
+#             random.randint(int(min(start[0], end[0])), int(max(start[0], end[0]))),
+#             random.randint(int(min(start[1], end[1])), int(max(start[1], end[1])))
+#         ])
+#     points.append(end)
+#     nodes = np.asfortranarray(points).T
+#     return bezier.Curve(nodes, degree=control_points + 1)
 
 async def move_mouse_naturally(page, frame, target_selector):
     current_pos = await page.evaluate("""() => { 

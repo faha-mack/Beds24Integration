@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 from datetime import timedelta, timezone
+from bson import json_util
 import json
 import traceback
 from fastapi import Body, FastAPI, HTTPException, BackgroundTasks, Request, logger
@@ -18,6 +19,8 @@ from dotenv import load_dotenv
 from models import CheckOutInstructions, Descriptions, ListingDetails, PricingSettings, SessionRequest, BookingRules
 from models import Custom, PropertyDetails, PropertyProfile, InvoicesContact, ReservationsContact, Policies
 from bs4 import BeautifulSoup
+from typing import Optional
+from bson import json_util
 # import captcha_audio_bypass
 
 load_dotenv()
