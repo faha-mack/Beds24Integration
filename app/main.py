@@ -1,10 +1,7 @@
 import asyncio
 import datetime
 from datetime import timedelta, timezone
-from enum import Enum
 import json
-from typing import Optional
-from bson import json_util
 import traceback
 from fastapi import Body, FastAPI, HTTPException, BackgroundTasks, Request, logger
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -21,7 +18,7 @@ from dotenv import load_dotenv
 from models import CheckOutInstructions, Descriptions, ListingDetails, PricingSettings, SessionRequest, BookingRules
 from models import Custom, PropertyDetails, PropertyProfile, InvoicesContact, ReservationsContact, Policies
 from bs4 import BeautifulSoup
-import captcha_audio_bypass
+# import captcha_audio_bypass
 
 load_dotenv()
 # MongoDB setup
