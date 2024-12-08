@@ -7,7 +7,7 @@ class HardBypass:
     def __init__(self):
         self.base_url = "https://captchakiller1.p.rapidapi.com"
         self.headers = {
-            'x-rapidapi-key': "3e7b41810dmsh36643b0730bb46fp1ab16bjsnf465416451bc",
+            'x-rapidapi-key': "90c2ea2c97mshbc9082cf24cf7d0p1dabfdjsnff442f00af00",
             'x-rapidapi-host': "captchakiller1.p.rapidapi.com"
         }
     

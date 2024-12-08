@@ -12,9 +12,11 @@ WORKDIR /app
 
 # Install necessary dependencies for Playwright and browser rendering in Docker
 RUN apt-get update -y && \
-    apt-get install -y wget gnupg libnss3 libxss1 libasound2 fonts-noto-color-emoji && \
+    apt-get install -y wget gnupg libnss3 libxss1 libasound2 fonts-noto-color-emoji \
+    libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libatspi2.0-0 libxcomposite1 libxdamage1 \
+    libxfixes3 libxrandr2 libgbm1 libdrm2 libxkbcommon0 && \
     pip install --no-cache-dir -r requirements.txt && \
-    playwright install --with-deps && \
+    playwright install chromium && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
